@@ -10,3 +10,4 @@ all_runs <- all_runs %>%
 	select(Library.Type, Run.Type, Practical.Size..GB.)
 
 saveRDS(all_runs, file = "data/all_runs.rds")
+
