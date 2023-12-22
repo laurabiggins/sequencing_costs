@@ -33,7 +33,7 @@ ui <- fluidPage(
 			fluidRow(
 				column(
 					width = 6, offset = 3,
-					h1("Storage and running costs for sequencing data"),
+					h1("Storage costs for sequencing data"),
 					br(),
 					#actionButton("browser", "browser"),
 					verticalLayout(
@@ -209,8 +209,8 @@ server <- function(input, output, session) {
 		
 		lane_text <- format_lane_text(input$no_of_lanes)
 
-		paste0("The cost of running", lane_text, input$library_selector, " on a ", 
-					 input$run_type_selector, " and storing the data is ", formatted_cost(), ".")
+		paste0("The cost of storing the data from", lane_text, input$library_selector, " on a ", 
+					 input$run_type_selector, " is ", formatted_cost(), ".")
 	})
 	
 	## Clipboard button ---- 
