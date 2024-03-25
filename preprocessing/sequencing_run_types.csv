@@ -1,0 +1,19 @@
+Run,read_length,paired,mseqs
+MiSeq Standard,50,FALSE,32
+MiSeq Standard,150,FALSE,32
+MiSeq Standard,150,TRUE,32
+MiSeq Standard,300,TRUE,32
+MiSeq Micro,150,TRUE,3
+MiSeq Nano,150,TRUE,1
+MiSeq Nano,250,TRUE,1
+NextSeq500 High Output,75,FALSE,460
+NextSeq500 High Output,150,FALSE,460
+NextSeq500 High Output,150,TRUE,460
+NextSeq500 Mid Output,150,FALSE,175
+NextSeq500 Mid Output,150,TRUE,175
+NovaSeq S2,150,FALSE,1600
+NovaSeq S2,150,TRUE,1600
+NovaSeq S4,150,FALSE,2000
+NovaSeq S4,150,TRUE,2000
+NovaSeq S4,100,FALSE,2000
+NovaSeq S4,100,TRUE,2000

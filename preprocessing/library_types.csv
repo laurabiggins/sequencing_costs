@@ -1,0 +1,22 @@
+﻿Library_Prep,Derived Data,Notes
+10X 3' RNA,1,
+10X 5' RNA,1,
+10X VDJ-seq,1,
+4C,0,
+ATAC-Seq,0,
+Bisulfite-seq (PBAT),2,"Dedup BAM, extracted meth"
+Bisulfite-seq (Reduced Representation),1,Extracted meth
+Bisulfite-seq (WGSBS),2,"Dedup BAM, extracted meth"
+CHiC,0,
+Genomic DNA,0,
+HiC,0,
+Histone ChIP,0,
+MeDIP,0,
+NOMe-seq,0,
+non-standard Bisulfite,2,"Dedup BAM, extracted meth"
+Protein ChIP,0,
+RNA-Seq,0,
+scBS-seq,0,
+scNMT-Seq,1,Split data types
+SLAM-Seq,0,
+Small RNA,0,
