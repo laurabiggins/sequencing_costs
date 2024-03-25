@@ -1,0 +1,200 @@
+---
+title: "Preprocessing of sequencing storage data"
+format:
+  html:
+    code-fold: show
+    code-tools: true
+editor: visual
+editor_options: 
+  chunk_output_type: console
+embed-resources: true
+---
+
+```{r}
+#| include: FALSE
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+Input files
+
+```{r}
+sequencing_run_types_file <- "sequencing_run_types.csv"
+file_sizes_file <- "file_sizesL.txt"
+library_types <- "library_types.csv"
+```
+
+
+
+## Sequencing run sizes
+
+`file_sizesL.txt` contains sizes of files generated from the `make_outputs.py` script.
+
+```{r}
+file_sizes <- read_delim(file_sizes_file, col_names = c("bytes","file")) 
+kable(head(file_sizes))
+```
+
+Separate out the read length and n million seqs.
+
+```{r}
+file_sizes <- file_sizes %>%
+  separate(
+    file,
+    into=c("read_length",NA,"mseqs",NA),
+    sep="_",
+    convert=TRUE
+  ) 
+
+kbl(file_sizes) |>
+	kable_paper() |>
+	scroll_box(height = "300px")
+```
+
+## Plotting and regression
+
+```{r, fig.width=10, fig.height=7}
+file_sizes %>%
+  ggplot(aes(x=mseqs, y=bytes)) +
+  geom_smooth(method="lm") +
+  geom_point() +
+  facet_wrap(vars(read_length), scales = "free_y")
+```
+
+## Calculate slope
+
+```{r}
+get_slope <- function(b,m) {
+  lm(b~m) -> l
+  return (l$coefficients[2])
+}
+
+file_slopes <- file_sizes %>%
+  group_by(read_length) %>%
+  summarise(
+    slope=get_slope(bytes,mseqs)
+) 
+
+kable(file_slopes, format.args = list(big.mark = ','))
+```
+
+We can use these values to interpolate/extrapolate for any number of sequences.
+
+## Sequencing run types
+
+[NovaSeq specs](https://emea.illumina.com/systems/sequencing-platforms/novaseq/specifications.html "NovaSeq specs")\
+
+### Standard run types  
+
+These will need updating as necessary.
+
+```{r}
+run_types <- read_delim(sequencing_run_types_file)
+kbl(run_types, digits = 2) |>
+	kable_paper() |>
+	scroll_box(height = "300px")
+```
+
+
+### Calculate size of fastq files
+
+Using the slope data.  
+
+```{r}
+run_types <- run_types |>
+	mutate(Run = stringr::str_trim(Run)) |>
+	left_join(file_slopes) |>
+	mutate(fastq_size_gb=((mseqs*slope)/(1024^3))*if_else(paired,2,1))
+kbl(run_types, digits = 2) |>
+	kable_paper() |>
+	scroll_box(height = "300px")
+```
+
+## Data storage sizes
+
+```{r}
+run_types <- run_types |>
+	mutate(
+    split_fq_size_gb   = fastq_size_gb,
+    trimmed_fq_size_gb = fastq_size_gb,
+    mapped_BAM_size_gb = fastq_size_gb * 1.5
+  ) %>%
+  select(-slope)
+
+kbl(run_types, digits = 2) |>
+	kable_paper() |>
+	scroll_box(height = "400px")
+```
+
+### Calculate storage sizes for retaining different amounts of data
+
+```
+minimum_possible_size_gb   = fastq_size_gb,
+practical_storage_size_gb  = split_fq_size_gb + mapped_BAM_size_gb + derived_data_size_gb
+full_data_size_gb          = fastq_size_gb + split_fq_size_gb + trimmed_fq_size_gb + mapped_BAM_size_gb + derived_data_size_gb
+```
+
+```{r}
+library_types <- read_csv(library_types)
+
+sizes <- run_types |>
+	crossing(library_types) |>
+	mutate(
+	    derived_data_size_gb = fastq_size_gb * `Derived Data`
+	  ) %>%
+	  select(-`Derived Data`, -Notes) %>%
+	  mutate(
+	    minimum_possible_size_gb = fastq_size_gb,
+	    practical_storage_size_gb = split_fq_size_gb + mapped_BAM_size_gb + derived_data_size_gb,
+	    full_data_size_gb = fastq_size_gb + split_fq_size_gb + trimmed_fq_size_gb + mapped_BAM_size_gb + derived_data_size_gb
+	  )
+```
+
+```{r, echo=FALSE, eval=FALSE}
+size_cols <- stringr::str_detect(colnames(sizes), "size")
+DT::datatable(sizes, rownames = FALSE) |>
+	DT::formatRound(columns = size_cols)
+```
+
+## Costs
+
+Cost per unit was supplied by computing - this is liable to change.
+
+```{r}
+cost_per_unit <- 1.32
+costs <- sizes |>
+	mutate(
+		practical_cost = practical_storage_size_gb * cost_per_unit,
+		full_cost      = full_data_size_gb * cost_per_unit
+	)
+
+size_cost_cols <- stringr::str_detect(colnames(costs), "size|cost")
+
+costs |>
+	DT::datatable(costs, rownames = FALSE) |>
+	DT::formatRound(columns = size_cost_cols)
+```
+
+
+This is the file used in the Shiny app.
+
+```{r, eval=FALSE}
+saveRDS(costs, file = "../data/all_run_costs.rds")
+```
+
+
+## Slope regression plot
+
+Interpolating for other read lengths
+
+```{r, fig.height=5, fig.width=5}
+file_slopes |>
+	ggplot(aes(x=read_length, y=slope)) +
+	geom_smooth(method="lm") +
+	geom_point()
+
+```
+
+That's not bad, we could use this for other read lengths.
