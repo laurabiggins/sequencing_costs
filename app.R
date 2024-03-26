@@ -139,6 +139,78 @@ server <- function(input, output, session) {
 	
 	output$cost <- renderText(formatted_cost())
 	
+	observe({
+		
+		updateVirtualSelect(inputId = "library_type_selector", choices = valid_libraries(), selected = chosen_lib_type())
+		updateVirtualSelect(inputId = "run_type_selector", choices = valid_runs(), selected = chosen_run_type())
+		updateVirtualSelect(inputId = "read_length_selector", choices = valid_read_lengths(), selected = chosen_read_length())
+		updateVirtualSelect(inputId = "paired_end_selector", choices = valid_paired(), selected = chosen_paired_type())
+		
+	})
+	
+	chosen_lib_type <- reactive({
+		if(isTruthy(input$library_selector)) {
+			input$library_selector
+		} else NULL
+	})
+	
+	chosen_run_type <- reactive({
+		if(isTruthy(input$run_type_selector)) {
+			input$run_type_selector
+		} else NULL
+	})
+
+	chosen_read_length <- reactive({
+		 if(isTruthy(input$read_length_selector)) input$read_length_selector
+	})
+	
+	chosen_paired_type <- reactive({
+		if(isTruthy(input$paired_end_selector)) input$paired_end_selector
+	})
+	
+	
+	valid_libraries <- reactive({
+		get_valid_libraries(
+			all_run_info  = all_run_info,
+			chosen_lib    = NULL, 
+			chosen_run    = chosen_run_type(),
+			chosen_paired = chosen_paired_type(),
+			chosen_read_length = chosen_read_length()
+		)	
+	})
+	
+	valid_runs <- reactive({
+		get_valid_runs(
+			all_run_info  = all_run_info,
+			chosen_lib    = chosen_lib_type(), 
+			chosen_run    = NULL,
+			chosen_paired = chosen_paired_type(),
+			chosen_read_length = chosen_read_length()
+		)	
+	})
+	
+	valid_read_lengths <- reactive({
+		get_valid_read_lengths(
+			all_run_info  = all_run_info,
+			chosen_lib    = chosen_lib_type(), 
+			chosen_run    = chosen_run_type(),
+			chosen_paired = chosen_paired_type(),
+			chosen_read_length = NULL
+		)	
+	})
+	
+	valid_paired <- reactive({
+		get_valid_paired(
+			all_run_info  = all_run_info,
+			chosen_lib    = chosen_lib_type(), 
+			chosen_run    = chosen_run_type(),
+			chosen_paired = NULL,
+			chosen_read_length = chosen_read_length()
+		)	
+	})
+	
+	
+	
 	## observeEvents ----
 	observeEvent(input$no_of_lanes, {
 		if(!isTruthy(input$no_of_lanes)) no_of_lanes(NULL)
@@ -151,92 +223,6 @@ server <- function(input, output, session) {
 		}
 	})
 
-	### update available run types after library selection ----
-
-	# There actually seem to be the same run types for all the library types so this
-	# isn't strictly necessary, but we probably need to amend that.
-	observeEvent(input$library_selector, {
-		if(isTruthy(input$library_selector)) {
-			
-			run_info_filt <- all_run_info |>
-				filter(Library_Prep == input$library_selector)
-			
-			valid_run_types <- run_info_filt |>
-				distinct(Run) |>
-				pull(Run)
-
-			filtered_run_info(run_info_filt)
-
-			updateVirtualSelect(inputId = "run_type_selector", choices = valid_run_types)
-		}
-	})
-	
-	### update available read lengths ----------------
-	
-	observeEvent(input$run_type_selector, {
-		if(isTruthy(input$run_type_selector)) {
-			
-			run_info_filt <- filtered_run_info() |>
-				filter(Run == input$run_type_selector)
-			
-			valid_read_lengths <- run_info_filt |>
-				distinct(read_length) |>
-				pull(read_length)
-			
-			filtered_run_info(run_info_filt)	
-			
-			updateVirtualSelect(inputId = "read_length_selector", choices = valid_read_lengths)
-		}
-	})
-	
-	
-	
-	 observeEvent(input$read_length_selector, {
-	 	if(isTruthy(input$read_length_selector)) {
-	 		
-	 		run_info_filt <- filtered_run_info() |>
-	 			filter(read_length == input$read_length_selector)
-
-	 		single_paired_options <- run_info_filt |>
-	 			pull(paired)
-	 		
-	 		vec_names <- if_else(single_paired_options, "yes", "no")
-	 		names(single_paired_options) <- vec_names
-	 		
-	 		updateVirtualSelect(inputId = "paired_end_selector", choices = single_paired_options)
-	 		
-	 		filtered_run_info(run_info_filt)	
-	 	}
-	 })
-	
-	 observeEvent(input$read_length_selector, {
-	 	if(isTruthy(input$read_length_selector)) {
-	 		
-	 		run_info_filt <- filtered_run_info() |>
-	 			filter(read_length == input$read_length_selector)
-	 		
-	 		single_paired_options <- run_info_filt |>
-	 			pull(paired)
-	 		
-	 		vec_names <- if_else(single_paired_options, "yes", "no")
-	 		names(single_paired_options) <- vec_names
-	 		
-	 		updateVirtualSelect(inputId = "paired_end_selector", choices = single_paired_options)
-	 		
-	 		filtered_run_info(run_info_filt)	
-	 	}
-	 })
-	 
-	 observeEvent(input$paired_end_selector, {
-	 	if(isTruthy(input$paired_end_selector)) { # this works because it's text, not logical
-	 		
-	 		run_info_filt <- filtered_run_info() |>
-	 			filter(paired == input$paired_end_selector) # this works because as.logical("FALSE") #> FALSE
-	 		
-	 		filtered_run_info(run_info_filt)
-	 	}
-	 })
-	 
 	 
 	### validate selections ----
 	# only show the calculate button if we've got valid input for each field
@@ -279,18 +265,27 @@ server <- function(input, output, session) {
 	# We'll round up to the nearest pound
 	cost <- reactive({
 		
-		req(input$no_of_lanes)
+		req(storage_size())
 		
-		ceiling(run_size() * input$no_of_lanes * cost_per_unit)
+		ceiling(storage_size() * input$no_of_lanes * cost_per_unit)
 	})
 	
 	# extract run size
-	run_size <- reactive({
+	storage_size <- reactive({
 		
-		req(filtered_run_info())
-		req(nrow(filtered_run_info()) == 1)
+		req(input$no_of_lanes, chosen_lib_type(), chosen_run_type(), chosen_paired_type(), chosen_read_length())
 		
-		filtered_run_info() |>
+		filt <- get_filtered_table(
+			all_run_info, 
+			chosen_lib = chosen_lib_type(), 
+			chosen_run = chosen_run_type(), 
+			chosen_paired = chosen_paired_type(), 
+			chosen_read_length = chosen_read_length()
+		)
+		
+		req(nrow(filt) == 1)
+		
+		filt |>
 			pull(practical_storage_size_gb)
 	}) #|>
 	#	bindEvent(input$calculate_btn)
