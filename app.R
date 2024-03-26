@@ -40,6 +40,7 @@ ui <- fluidPage(
 					h1("Storage costs for sequencing data"),
 					br(),
 					actionButton("browser", "browser"),
+					actionButton("reset", "reset"),
 					verticalLayout(
 						shinyWidgets::virtualSelectInput(
 							inputId = "library_selector", 
@@ -137,29 +138,37 @@ server <- function(input, output, session) {
 	
 	observe({
 		
-		updateVirtualSelect(inputId = "library_type_selector", choices = valid_libraries(),    selected = chosen_lib_type())
+		updateVirtualSelect(inputId = "library_selector", choices = valid_libraries(),    selected = chosen_lib_type())
 		updateVirtualSelect(inputId = "run_type_selector",     choices = valid_runs(),         selected = chosen_run_type())
 		updateVirtualSelect(inputId = "read_length_selector",  choices = valid_read_lengths(), selected = chosen_read_length())
 		updateVirtualSelect(inputId = "paired_end_selector",   choices = valid_paired(),       selected = chosen_paired_type())
 		
 	})
 	
+	chosen_lib_type     <- reactiveVal(NULL)
+	chosen_run_type     <- reactiveVal(NULL)
+	chosen_read_length  <- reactiveVal(NULL)
+	chosen_paired_type  <- reactiveVal(NULL)
 	
 	# These will return NULL if not Truthy
-	chosen_lib_type <- reactive({
-		if(isTruthy(input$library_selector)) input$library_selector
+	observeEvent(input$library_selector, {
+		x <- if(isTruthy(input$library_selector)) input$library_selector
+		chosen_lib_type(x)
 	})
 	
-	chosen_run_type <- reactive({
-		if(isTruthy(input$run_type_selector)) input$run_type_selector
+	observeEvent(input$run_type_selector, {
+		x <- if(isTruthy(input$run_type_selector)) input$run_type_selector
+		chosen_run_type(x)
 	})
 
-	chosen_read_length <- reactive({
-		 if(isTruthy(input$read_length_selector)) input$read_length_selector
+	observeEvent(input$read_length_selector, {
+		x <- if(isTruthy(input$read_length_selector)) input$read_length_selector
+		chosen_read_length(x)
 	})
 	
-	chosen_paired_type <- reactive({
-		if(isTruthy(input$paired_end_selector)) input$paired_end_selector
+	observeEvent(input$paired_end_selector, {
+		x <- if(isTruthy(input$paired_end_selector)) input$paired_end_selector
+		chosen_paired_type(x)
 	})
 	
 	
@@ -309,6 +318,13 @@ server <- function(input, output, session) {
 			placement = "top",
 			options = list(delay = list(show = 800, hide = 100), trigger = "hover")
 		)
+	})
+	
+	observeEvent(input$reset, {
+		chosen_lib_type(NULL) 
+		chosen_run_type(NULL) 
+		chosen_read_length(NULL)
+		chosen_paired_type(NULL)
 	})
 	
 }
