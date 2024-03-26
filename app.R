@@ -35,41 +35,57 @@ ui <- fluidPage(
 			## dropdowns ----
 			fluidRow(
 				column(
-					width = 6, offset = 3,
+					width = 10, offset = 1,
 					h1("Storage costs for sequencing data"),
 					br(),
-					actionButton("browser", "browser"),
-					actionButton("reset", "reset"),
-					verticalLayout(
-						shinyWidgets::virtualSelectInput(
-							inputId = "library_selector", 
-							label   = "Library type", 
-							choices = ""
+					#actionButton("browser", "browser"),
+					#verticalLayout(
+					fluidRow(
+						column(width = 6,
+							shinyWidgets::virtualSelectInput(
+								inputId = "library_selector", 
+								label   = "Library type", 
+								choices = ""
+							)
 						),
-						br(),
-						shinyWidgets::virtualSelectInput(
-							inputId = "run_type_selector", 
-							label   = "Run type",
-							choices = ""
+						column(width = 6,
+							shinyWidgets::virtualSelectInput(
+								inputId = "run_type_selector", 
+								label   = "Run type",
+								choices = ""
+							)
+						)
+					),
+					fluidRow(
+						column(width = 6,
+							shinyWidgets::virtualSelectInput(
+								inputId = "read_length_selector", 
+								label   = "Read Length",
+								choices = ""
+							)
 						),
-						br(),
-						shinyWidgets::virtualSelectInput(
-							inputId = "read_length_selector", 
-							label   = "Read Length",
-							choices = ""
-						),
-						br(),
-						shinyWidgets::virtualSelectInput(
-							inputId = "paired_end_selector", 
-							label   = "Paired End",
-							#choices = list(No = FALSE, Yes = TRUE)
-							choices = ""
-						),
-						br(),
-						numericInput(
-							inputId = "no_of_lanes",
-							label   = "Number of lanes",
-							value   = 1
+						column(width = 6,
+							shinyWidgets::virtualSelectInput(
+								inputId = "paired_end_selector", 
+								label   = "Paired End",
+								#choices = list(No = FALSE, Yes = TRUE)
+								choices = ""
+							)
+						)
+					),
+					fluidRow(
+						column(width = 6,
+							numericInput(
+								inputId = "no_of_lanes",
+								label   = "Number of lanes",
+								value   = 1
+							)
+						)
+					),
+					fluidRow(
+						column(
+							width = 12,
+							#DT::dataTableOutput(outputId = "fake_table")
 						)
 					)
 				)
@@ -77,7 +93,7 @@ ui <- fluidPage(
 			br(),
 			fluidRow(
 				column(
-					width = 6, offset = 3,
+					width = 10, offset = 1,
 					tabsetPanel(
 						id = "calculate_panel",
 						type = "hidden",
@@ -93,21 +109,22 @@ ui <- fluidPage(
 									actionButton(inputId = "calculate_btn", label = "Calculate cost")
 								),
 								column(
-									width = 2,
+									width = 3,
 									offset = 1,
-									textOutput(outputId = "cost")
+									actionButton("reset", "reset")
 								)
 							),
 							br(),
 							br(),
 							conditionalPanel(
 								condition = "input.calculate_btn > 0",
-								# fluidRow(
-								# 	column(
-								# 		width = 12,
-								# 		tableOutput(outputId = "summary_table")
-								# 	)
-								# ),
+								fluidRow(
+									column(
+										width = 12,
+										DT::dataTableOutput(outputId = "summary_table")
+									)
+								),
+								br(),
 								fluidRow(
 									column(width = 11, textOutput(outputId = "output_text")),
 									column(width = 1, uiOutput("clip"))
@@ -120,7 +137,6 @@ ui <- fluidPage(
 		)
 	)
 )
-
 
 server <- function(input, output, session) {
 	
@@ -147,17 +163,39 @@ server <- function(input, output, session) {
 	
 	output$cost <- renderText(formatted_cost())
 	
-	# output$summary_table <- function(){
-	# 	
-	# 		knitr::kable(neat_table(), digits = 2)
-	# }
+	output$summary_table <- DT::renderDataTable({
+	 	
+		DT::datatable(neat_table(), rownames = FALSE, options = list(dom="t")) |>
+			DT::formatRound(columns = c(2,3))
+	})
+	
+	output$fake_table <- DT::renderDataTable({
+		
+		DT::datatable(temp_table, rownames = FALSE, options = list(dom="t")) |>
+			DT::formatRound(columns = c(2,3))
+		
+	})
+	
+	temp_table <- tibble::tibble(
+			`storage type`    = c("min practical", "full"), 
+			`storage size gb` = c(1000, 2500),
+			`storage cost`    = c(1320, 5440)
+		)
 	
 	observe({
 		
-		updateVirtualSelect(inputId = "library_selector",     choices = valid_libraries(),    selected = seq_options$chosen_lib_type)
-		updateVirtualSelect(inputId = "run_type_selector",    choices = valid_runs(),         selected = seq_options$chosen_run_type)
-		updateVirtualSelect(inputId = "read_length_selector", choices = valid_read_lengths(), selected = seq_options$chosen_read_length)
-		updateVirtualSelect(inputId = "paired_end_selector",  choices = valid_paired(),       selected = seq_options$chosen_paired_type)
+		updateVirtualSelect(
+			"library_selector", choices = valid_libraries(), selected = seq_options$chosen_lib_type
+		)
+		updateVirtualSelect(
+			"run_type_selector", choices = valid_runs(), selected = seq_options$chosen_run_type
+		)
+		updateVirtualSelect(
+			"read_length_selector", choices = valid_read_lengths(), selected = seq_options$chosen_read_length
+		)
+		updateVirtualSelect(
+			"paired_end_selector", choices = valid_paired(), selected = seq_options$chosen_paired_type
+		)
 		
 	})
 
@@ -252,9 +290,9 @@ server <- function(input, output, session) {
 	# We'll round up to the nearest pound
 	cost <- reactive({
 		
-		req(storage_size())
-		
-		ceiling(storage_size() * input$no_of_lanes * cost_per_unit)
+		ceiling(total_values()$practical_cost)
+		#req(storage_size())
+		#ceiling(storage_size() * input$no_of_lanes * cost_per_unit)
 	})
 	
 	# extract run size
@@ -269,17 +307,21 @@ server <- function(input, output, session) {
 		dplyr::select(filt, practical_storage_size_gb:full_cost)
 	})
 	
+	total_values <- reactive({
+		filtered_table() * no_of_lanes()
+	})
+	
 	
 	neat_table <- reactive({
 		tibble::tibble(
 			`storage type`    = c("min practical", "full"), 
-			`storage size gb` = c(filtered_table()$practical_storage_size_gb, filtered_table()$full_data_size_gb),
-			`storage cost`    = c(filtered_table()$practical_cost, filtered_table()$full_cost)
+			`storage size gb` = c(total_values()$practical_storage_size_gb, total_values()$full_data_size_gb),
+			`storage cost £`    = c(total_values()$practical_cost, total_values()$full_cost)
 		)
 	})
 	
 	storage_size <- reactive({
-		filtered_table()$practical_storage_size_gb
+		total_values()$practical_storage_size_gb
 	}) 
 	
 	# calculated cost can be "" or a number. 
@@ -295,8 +337,11 @@ server <- function(input, output, session) {
 		
 		lane_text <- format_lane_text(input$no_of_lanes)
 
-		paste0("The cost of storing the data from", lane_text, input$library_selector, " on a ", 
-					 input$run_type_selector, " is ", formatted_cost(), ".")
+		paste0("The minimum practical storage size for", lane_text, input$library_selector, " on a ", 
+					 input$run_type_selector, " is ", total_values()$practical_storage_size_gb, "Gb. At a storage cost of £1.32 per Gb for 10 years, this comes to ", formatted_cost(), ".")
+		
+		# paste0("The cost of storing the data from", lane_text, input$library_selector, " on a ", 
+		# 			 input$run_type_selector, " is ", formatted_cost(), ".")
 	})
 	
 	## Clipboard button ---- 
