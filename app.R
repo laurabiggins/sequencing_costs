@@ -4,13 +4,12 @@ library(shinyjs)
 library(shinyWidgets)
 library(dplyr)
 library(rclipboard)
+library(kableExtra)
 
 # more info - generates x gb of data which costs x, plus extra files
 
 all_run_info <- readRDS("data/all_run_costs.rds")
 available_library_types <- unique(all_run_info$Library_Prep)
-# available_run_types <- "" # populate this once library has been selected
-# available_read_lengths <- "" # populate once
 cost_per_unit <- 1.32
 max_lanes <- 100
 min_lanes <- 1
@@ -101,9 +100,14 @@ ui <- fluidPage(
 							),
 							br(),
 							br(),
-							br(),
 							conditionalPanel(
 								condition = "input.calculate_btn > 0",
+								# fluidRow(
+								# 	column(
+								# 		width = 12,
+								# 		tableOutput(outputId = "summary_table")
+								# 	)
+								# ),
 								fluidRow(
 									column(width = 11, textOutput(outputId = "output_text")),
 									column(width = 1, uiOutput("clip"))
@@ -129,6 +133,13 @@ server <- function(input, output, session) {
 	
 	no_of_lanes <- reactiveVal(NULL)
 	
+	seq_options <- reactiveValues(
+		chosen_lib_type    = NULL,
+		chosen_run_type    = NULL,
+		chosen_read_length = NULL,
+		chosen_paired_type = NULL
+	)
+	
 	## outputs ----
 	output$field_fill_msg <- renderText(output_msg())
 	
@@ -136,78 +147,55 @@ server <- function(input, output, session) {
 	
 	output$cost <- renderText(formatted_cost())
 	
+	# output$summary_table <- function(){
+	# 	
+	# 		knitr::kable(neat_table(), digits = 2)
+	# }
+	
 	observe({
 		
-		updateVirtualSelect(inputId = "library_selector", choices = valid_libraries(),    selected = chosen_lib_type())
-		updateVirtualSelect(inputId = "run_type_selector",     choices = valid_runs(),         selected = chosen_run_type())
-		updateVirtualSelect(inputId = "read_length_selector",  choices = valid_read_lengths(), selected = chosen_read_length())
-		updateVirtualSelect(inputId = "paired_end_selector",   choices = valid_paired(),       selected = chosen_paired_type())
+		updateVirtualSelect(inputId = "library_selector",     choices = valid_libraries(),    selected = seq_options$chosen_lib_type)
+		updateVirtualSelect(inputId = "run_type_selector",    choices = valid_runs(),         selected = seq_options$chosen_run_type)
+		updateVirtualSelect(inputId = "read_length_selector", choices = valid_read_lengths(), selected = seq_options$chosen_read_length)
+		updateVirtualSelect(inputId = "paired_end_selector",  choices = valid_paired(),       selected = seq_options$chosen_paired_type)
 		
 	})
-	
-	chosen_lib_type     <- reactiveVal(NULL)
-	chosen_run_type     <- reactiveVal(NULL)
-	chosen_read_length  <- reactiveVal(NULL)
-	chosen_paired_type  <- reactiveVal(NULL)
+
+
 	
 	# These will return NULL if not Truthy
 	observeEvent(input$library_selector, {
-		x <- if(isTruthy(input$library_selector)) input$library_selector
-		chosen_lib_type(x)
+		seq_options$chosen_lib_type <- if(isTruthy(input$library_selector)) input$library_selector
 	})
 	
 	observeEvent(input$run_type_selector, {
-		x <- if(isTruthy(input$run_type_selector)) input$run_type_selector
-		chosen_run_type(x)
+		seq_options$chosen_run_type <- if(isTruthy(input$run_type_selector)) input$run_type_selector
 	})
 
 	observeEvent(input$read_length_selector, {
-		x <- if(isTruthy(input$read_length_selector)) input$read_length_selector
-		chosen_read_length(x)
+		seq_options$chosen_read_length <- if(isTruthy(input$read_length_selector)) input$read_length_selector
 	})
 	
 	observeEvent(input$paired_end_selector, {
-		x <- if(isTruthy(input$paired_end_selector)) input$paired_end_selector
-		chosen_paired_type(x)
+		seq_options$chosen_paired_type <- if(isTruthy(input$paired_end_selector)) input$paired_end_selector
 	})
 	
 	
 	valid_libraries <- reactive({
-		get_valid_libraries(
-			all_run_info  = all_run_info,
-			chosen_run    = chosen_run_type(),
-			chosen_paired = chosen_paired_type(),
-			chosen_read_length = chosen_read_length()
-		)	
+		get_valid_libraries(all_run_info, reactiveValuesToList(seq_options))	
 	})
 	
 	valid_runs <- reactive({
-		get_valid_runs(
-			all_run_info  = all_run_info,
-			chosen_lib    = chosen_lib_type(), 
-			chosen_paired = chosen_paired_type(),
-			chosen_read_length = chosen_read_length()
-		)	
+		get_valid_runs(all_run_info, reactiveValuesToList(seq_options))	
 	})
 	
 	valid_read_lengths <- reactive({
-		get_valid_read_lengths(
-			all_run_info  = all_run_info,
-			chosen_lib    = chosen_lib_type(), 
-			chosen_run    = chosen_run_type(),
-			chosen_paired = chosen_paired_type()
-		)	
+		get_valid_read_lengths(all_run_info, reactiveValuesToList(seq_options))	
 	})
 	
 	valid_paired <- reactive({
-		get_valid_paired(
-			all_run_info  = all_run_info,
-			chosen_lib    = chosen_lib_type(), 
-			chosen_run    = chosen_run_type(),
-			chosen_read_length = chosen_read_length()
-		)	
+		get_valid_paired(all_run_info, reactiveValuesToList(seq_options))		
 	})
-	
 	
 	
 	## observeEvents ----
@@ -270,24 +258,29 @@ server <- function(input, output, session) {
 	})
 	
 	# extract run size
-	storage_size <- reactive({
+	filtered_table <- reactive({
 		
-		req(input$no_of_lanes, chosen_lib_type(), chosen_run_type(), chosen_paired_type(), chosen_read_length())
+		req(input$no_of_lanes, seq_options$chosen_lib_type, seq_options$chosen_run_type, seq_options$chosen_paired_type, seq_options$chosen_read_length)
 		
-		filt <- get_filtered_table(
-			all_run_info, 
-			chosen_lib = chosen_lib_type(), 
-			chosen_run = chosen_run_type(), 
-			chosen_paired = chosen_paired_type(), 
-			chosen_read_length = chosen_read_length()
-		)
+		filt <- get_filtered_table(all_run_info, reactiveValuesToList(seq_options))
 		
 		req(nrow(filt) == 1)
 		
-		filt |>
-			pull(practical_storage_size_gb)
-	}) #|>
-	#	bindEvent(input$calculate_btn)
+		dplyr::select(filt, practical_storage_size_gb:full_cost)
+	})
+	
+	
+	neat_table <- reactive({
+		tibble::tibble(
+			`storage type`    = c("min practical", "full"), 
+			`storage size gb` = c(filtered_table()$practical_storage_size_gb, filtered_table()$full_data_size_gb),
+			`storage cost`    = c(filtered_table()$practical_cost, filtered_table()$full_cost)
+		)
+	})
+	
+	storage_size <- reactive({
+		filtered_table()$practical_storage_size_gb
+	}) 
 	
 	# calculated cost can be "" or a number. 
 	formatted_cost <- reactive({
@@ -321,10 +314,12 @@ server <- function(input, output, session) {
 	})
 	
 	observeEvent(input$reset, {
-		chosen_lib_type(NULL) 
-		chosen_run_type(NULL) 
-		chosen_read_length(NULL)
-		chosen_paired_type(NULL)
+		seq_options$chosen_lib_type <- NULL
+		seq_options$chosen_run_type <- NULL
+		seq_options$chosen_read_length <- NULL
+		seq_options$chosen_paired_type <- NULL
+		
+		updateNumericInput(inputId = "no_of_lanes", value = 1)
 	})
 	
 }
