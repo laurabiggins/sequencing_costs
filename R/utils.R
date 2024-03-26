@@ -32,25 +32,31 @@ get_filtered_table <- function(
 }
 
 
-get_valid_libraries <- function(all_run_info, chosen_lib = NULL, chosen_run = NULL, chosen_paired = NULL, chosen_read_length = NULL) {
+get_valid_libraries <- function(all_run_info, chosen_run, chosen_paired, chosen_read_length) {
 	filt <- get_filtered_table(all_run_info, chosen_lib = NULL, chosen_run, chosen_paired, chosen_read_length)
 	c("", unique(filt$Library_Prep))
 }
 
-get_valid_runs <- function(all_run_info, chosen_lib = NULL, chosen_run = NULL, chosen_paired = NULL, chosen_read_length = NULL) {
-	filt <- get_filtered_table(all_run_info, chosen_lib, chosen_run = NULL, chosen_paired, chosen_read_length)
+get_valid_runs <- function(all_run_info, chosen_lib, chosen_paired, chosen_read_length) {
+	filt <- get_filtered_table(all_run_info, chosen_run = NULL, chosen_lib, chosen_paired, chosen_read_length)
 	c("", unique(filt$Run))
 }
 
-get_valid_read_lengths <- function(all_run_info, chosen_lib = NULL, chosen_run = NULL, chosen_paired = NULL, chosen_read_length = NULL) {
-	filt <- get_filtered_table(all_run_info, chosen_lib, chosen_run, chosen_paired, chosen_read_length=NULL)
+get_valid_read_lengths <- function(all_run_info, chosen_lib, chosen_run, chosen_paired) {
+	filt <- get_filtered_table(all_run_info, chosen_read_length = NULL, chosen_lib, chosen_run, chosen_paired)
 	c("", unique(filt$read_length))
 }
 
-get_valid_paired <- function(all_run_info, chosen_lib = NULL, chosen_run = NULL, chosen_paired = NULL, chosen_read_length = NULL) {
-	filt <- get_filtered_table(all_run_info, chosen_lib, chosen_run, chosen_paired = NULL, chosen_read_length)
+get_valid_paired <- function(all_run_info, chosen_lib, chosen_run, chosen_read_length) {
+	filt <- get_filtered_table(all_run_info, chosen_paired = NULL, chosen_lib, chosen_run,  chosen_read_length)
 	c("", unique(filt$paired))
 }
+
+
+
+
+
+
 
 
 
