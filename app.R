@@ -9,8 +9,8 @@ library(rclipboard)
 
 all_run_info <- readRDS("data/all_run_costs.rds")
 available_library_types <- unique(all_run_info$Library_Prep)
-available_run_types <- "" # populate this once library has been selected
-available_read_lengths <- "" # populate once 
+# available_run_types <- "" # populate this once library has been selected
+# available_read_lengths <- "" # populate once
 cost_per_unit <- 1.32
 max_lanes <- 100
 min_lanes <- 1
@@ -44,28 +44,26 @@ ui <- fluidPage(
 						shinyWidgets::virtualSelectInput(
 							inputId = "library_selector", 
 							label   = "Library type", 
-							choices = available_library_types,
-							autoSelectFirstOption = FALSE
+							choices = ""
 						),
 						br(),
 						shinyWidgets::virtualSelectInput(
 							inputId = "run_type_selector", 
 							label   = "Run type",
-							choices = available_run_types,
-							autoSelectFirstOption = FALSE
+							choices = ""
 						),
 						br(),
 						shinyWidgets::virtualSelectInput(
 							inputId = "read_length_selector", 
 							label   = "Read Length",
-							choices = available_read_lengths
+							choices = ""
 						),
 						br(),
 						shinyWidgets::virtualSelectInput(
 							inputId = "paired_end_selector", 
 							label   = "Paired End",
 							#choices = list(No = FALSE, Yes = TRUE)
-							choices = ("")
+							choices = ""
 						),
 						br(),
 						numericInput(
@@ -130,8 +128,6 @@ server <- function(input, output, session) {
 	
 	no_of_lanes <- reactiveVal(NULL)
 	
-	filtered_run_info <- reactiveVal(NULL)
-	
 	## outputs ----
 	output$field_fill_msg <- renderText(output_msg())
 	
@@ -141,23 +137,21 @@ server <- function(input, output, session) {
 	
 	observe({
 		
-		updateVirtualSelect(inputId = "library_type_selector", choices = valid_libraries(), selected = chosen_lib_type())
-		updateVirtualSelect(inputId = "run_type_selector", choices = valid_runs(), selected = chosen_run_type())
-		updateVirtualSelect(inputId = "read_length_selector", choices = valid_read_lengths(), selected = chosen_read_length())
-		updateVirtualSelect(inputId = "paired_end_selector", choices = valid_paired(), selected = chosen_paired_type())
+		updateVirtualSelect(inputId = "library_type_selector", choices = valid_libraries(),    selected = chosen_lib_type())
+		updateVirtualSelect(inputId = "run_type_selector",     choices = valid_runs(),         selected = chosen_run_type())
+		updateVirtualSelect(inputId = "read_length_selector",  choices = valid_read_lengths(), selected = chosen_read_length())
+		updateVirtualSelect(inputId = "paired_end_selector",   choices = valid_paired(),       selected = chosen_paired_type())
 		
 	})
 	
+	
+	# These will return NULL if not Truthy
 	chosen_lib_type <- reactive({
-		if(isTruthy(input$library_selector)) {
-			input$library_selector
-		} else NULL
+		if(isTruthy(input$library_selector)) input$library_selector
 	})
 	
 	chosen_run_type <- reactive({
-		if(isTruthy(input$run_type_selector)) {
-			input$run_type_selector
-		} else NULL
+		if(isTruthy(input$run_type_selector)) input$run_type_selector
 	})
 
 	chosen_read_length <- reactive({
@@ -172,7 +166,6 @@ server <- function(input, output, session) {
 	valid_libraries <- reactive({
 		get_valid_libraries(
 			all_run_info  = all_run_info,
-			chosen_lib    = NULL, 
 			chosen_run    = chosen_run_type(),
 			chosen_paired = chosen_paired_type(),
 			chosen_read_length = chosen_read_length()
@@ -183,7 +176,6 @@ server <- function(input, output, session) {
 		get_valid_runs(
 			all_run_info  = all_run_info,
 			chosen_lib    = chosen_lib_type(), 
-			chosen_run    = NULL,
 			chosen_paired = chosen_paired_type(),
 			chosen_read_length = chosen_read_length()
 		)	
@@ -194,8 +186,7 @@ server <- function(input, output, session) {
 			all_run_info  = all_run_info,
 			chosen_lib    = chosen_lib_type(), 
 			chosen_run    = chosen_run_type(),
-			chosen_paired = chosen_paired_type(),
-			chosen_read_length = NULL
+			chosen_paired = chosen_paired_type()
 		)	
 	})
 	
@@ -204,7 +195,6 @@ server <- function(input, output, session) {
 			all_run_info  = all_run_info,
 			chosen_lib    = chosen_lib_type(), 
 			chosen_run    = chosen_run_type(),
-			chosen_paired = NULL,
 			chosen_read_length = chosen_read_length()
 		)	
 	})
