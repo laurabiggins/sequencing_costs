@@ -29,7 +29,16 @@ h1 {
 #reset {
 	float: right;
 	margin-top: 30px;
-	
+	font: bold 16px Arial;
+  border: 2px solid #112A46;
+}
+
+#info_text {
+	font: 12px Arial;
+}
+
+#clipbtn1, #clipbtn2 {
+	border: 2px solid #112A46;
 }
 
 .btn {
@@ -57,13 +66,9 @@ h1 {
 }
 
 #output_text {
-	font: bold 20px Arial;
+	font: bold 16px Arial;
 }
 
-#cost {
-	font: bold 28px Arial;
-	padding: 5px;
-}
 
 
 /*

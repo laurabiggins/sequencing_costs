@@ -129,24 +129,42 @@ ui <- fluidPage(
 					column(
 						width  = 10, 
 						offset = 1,
-						br(),
-						p("Info about the different storage sizes"),
-						textOutput(outputId = "output_text")),
-					column(width = 1, uiOutput("clip"))
-				)
+						p(id = "info_text", "The volume of processed data that is retained will affect the total storage size. The 'practical storage size' includes the raw fastq files, mapped BAM files and minimal derived data files. The 'full storage size' allows for the retention of more processed data files.")
+					)
+				),
+				br(),
+				fluidRow(
+					column(
+						width  = 10, 
+						offset = 1,
+						textOutput(outputId = "output_text_practical")
+					),
+					column(width = 1, uiOutput("clip1"))
+				),
+				br(),
+				fluidRow(
+					column(
+						width  = 10, 
+						offset = 1,
+						textOutput(outputId = "output_text_full")
+					),
+					column(width = 1, uiOutput("clip2"))
+				),
+				br()
 			)
 		)
 	)
 )
 
+# server ----
 server <- function(input, output, session) {
 	
 	observeEvent(input$browser, browser())
 	
 	## reactive Vals ----
-	output_msg <- reactiveVal("Calculation summary here")
-	
-	calculated_cost <- reactiveVal("")
+	#output_msg <- reactiveVal("Calculation summary here")
+	field_fill_info <- reactiveVal("")
+	#calculated_cost <- reactiveVal("")
 
 	# dropdown options
 	seq_options <- reactiveValues(
@@ -158,39 +176,44 @@ server <- function(input, output, session) {
 	)
 	
 	## outputs ----
-	output$field_fill_msg <- renderText(output_msg())
+	output$field_fill_msg <- renderText(field_fill_info())
 	
-	output$output_text <- renderText(output_msg())
+	#output$output_text <- renderText(calc_summary_text())
 	
-	output$cost <- renderText(formatted_cost())
+	output$output_text_practical <- renderText(calc_summary_text())
+	output$output_text_full <- renderText(full_storage_text())
 	
 	output$summary_table <- DT::renderDataTable({
 		neat_table() |>
 			DT::datatable(rownames = FALSE, options = list(dom="t")) |>
-			DT::formatRound(columns = c(2,3))
+			DT::formatRound(columns = c(2,3), digits = 0)
 	})
 	
-	## Set seq_options reactiveVals when user changes selection ----
+	## observeEvents for dropdown selections ----
 	# The if statement will return NULL if isTruthy == FALSE
 	observeEvent(input$library_selector, {
-		seq_options$chosen_lib_type <- if(isTruthy(input$library_selector)) input$library_selector
+		l <- input$library_selector
+		seq_options$chosen_lib_type <- if(isTruthy(l)) l
 	})
 	
 	observeEvent(input$run_type_selector, {
-		seq_options$chosen_run_type <- if(isTruthy(input$run_type_selector)) input$run_type_selector
+		rt <- input$run_type_selector
+		seq_options$chosen_run_type <- if(isTruthy(rt)) rt
 	})
 
 	observeEvent(input$read_length_selector, {
-		seq_options$chosen_read_length <- if(isTruthy(input$read_length_selector)) input$read_length_selector
+		rl <- input$read_length_selector
+		seq_options$chosen_read_length <- if(isTruthy(rl)) rl
 	})
 	
 	observeEvent(input$paired_end_selector, {
-		seq_options$chosen_paired_type <- if(isTruthy(input$paired_end_selector)) input$paired_end_selector
+		pe <- input$paired_end_selector
+		seq_options$chosen_paired_type <- if(isTruthy(pe)) pe
 	})
 	
 	observeEvent(input$no_of_lanes, {
 		n <- input$no_of_lanes
-		seq_options$no_of_lanes <- if(n >= min_lanes & n <= max_lanes) n
+		seq_options$no_of_lanes <- if(isTruthy(n) & n >= min_lanes & n <= max_lanes) n
 	})
 	
 
@@ -227,7 +250,7 @@ server <- function(input, output, session) {
 			"read_length_selector", choices = valid_read_lengths(), selected = seq_options$chosen_read_length
 		)
 		updateVirtualSelect(
-			"paired_end_selector", choices = valid_paired(), selected = seq_options$chosen_paired_type
+			"paired_end_selector",  choices = valid_paired(), selected = seq_options$chosen_paired_type
 		)
 		
 	})
@@ -243,17 +266,17 @@ server <- function(input, output, session) {
 		
 		if(all_valid()){
 				updateTabsetPanel(session, "calculate_panel", selected = "calculate")
-				output_msg("")
-				calculated_cost("")
+				field_fill_info("")
+				#calculated_cost("")
 		} else {
 			msg <- if_else(
 				!isTruthy(seq_options$no_of_lanes), 
 				acceptable_lane_nos, 
 				"Fill in all fields above"
 			)
-			output_msg(msg)
+			field_fill_info(msg)
 			
-			calculated_cost("")
+			#calculated_cost("")
 			updateTabsetPanel(session, "calculate_panel", selected = "select_msg")
 		}
 	})
@@ -262,28 +285,11 @@ server <- function(input, output, session) {
 	### Calculate button ----
 	
 	observeEvent(input$calculate_btn, {
-		
-		calculated_cost(cost())
-		output_msg(output_text())
-		
 		updateTabsetPanel(session, "calculate_panel", selected = "cost_info")
 	})
 	
-	#TODO: sort out these cost reactives/outputs
-	# if no of lanes is deleted in app, it crashes - add if isTruthy
-	
-		
-	## Output value and text ----
-	
-	# We'll round up to the nearest pound
-	cost <- reactive({
-		
-		ceiling(total_values()$practical_cost)
-		#req(storage_size())
-		#ceiling(storage_size() * input$no_of_lanes * cost_per_unit)
-	})
-	
-	# extract run size
+	### filtered table ----
+	# get_filtered_table is in utils.R
 	filtered_table <- reactive({
 		
 		req(all_valid())
@@ -291,58 +297,78 @@ server <- function(input, output, session) {
 		req(nrow(filt) == 1)
 		dplyr::select(filt, practical_storage_size_gb:full_cost)
 	})
-	
+
+	### total values ----
+	# multiply storage and cost values by number of lanes
+	# round the values at this point
 	total_values <- reactive({
 		req(seq_options$no_of_lanes)
-		filtered_table() * seq_options$no_of_lanes
+		values <- filtered_table() * seq_options$no_of_lanes
+		round(values)
 	})
 	
-	
+	## summary table ----
+	# update the size and costs in the summary table
 	neat_table <- reactive({
+		tv <- total_values()
 		tibble::tibble(
-			`storage type`    = c("min practical", "full"), 
-			`storage size gb` = c(total_values()$practical_storage_size_gb, total_values()$full_data_size_gb),
-			`storage cost £`    = c(total_values()$practical_cost, total_values()$full_cost)
+			`storage type`    = c("min practical", "full"),
+			`storage size gb` = c(tv$practical_storage_size_gb, tv$full_data_size_gb),
+			`storage cost £`  = c(tv$practical_cost, tv$full_cost)
 		)
 	})
 	
-	storage_size <- reactive({
-		total_values()$practical_storage_size_gb
-	}) 
-	
-	# calculated cost can be "" or a number. 
-	formatted_cost <- reactive({
-		if_else(
-			isTruthy(calculated_cost()),
-			paste0("£",calculated_cost()),
-			""
-		)
-	})
-	
-	output_text <- reactive({
+	calc_summary_text <- reactive({
 		
-		lane_text <- format_lane_text(input$no_of_lanes)
+		lane_text <- format_lane_text(seq_options$no_of_lanes)
+		format_summary_msg(
+			reactiveValuesToList(seq_options),
+			total_values()$practical_storage_size_gb, 
+			total_values()$practical_cost, 
+			cost_per_unit, 
+			full=FALSE
+		)
+	})	
 
-		paste0("The minimum practical storage size for", lane_text, input$library_selector, " on a ", 
-					 input$run_type_selector, " is ", total_values()$practical_storage_size_gb, "Gb. At a storage cost of £1.32 per Gb for 10 years, this comes to ", formatted_cost(), ".")
+	full_storage_text <- reactive({
 		
-		# paste0("The cost of storing the data from", lane_text, input$library_selector, " on a ", 
-		# 			 input$run_type_selector, " is ", formatted_cost(), ".")
+		format_summary_msg(
+			reactiveValuesToList(seq_options),
+			total_values()$full_data_size_gb, 
+			total_values()$full_cost, 
+			cost_per_unit, 
+			full=TRUE
+		)
+
 	})
-	
+				 
 	## Clipboard button ---- 
 	# to enable easy copying of text
-	output$clip <- renderUI({
+	output$clip1 <- renderUI({
 		rclipButton(
-			inputId = "clipbtn",
+			inputId = "clipbtn1",
 			label = "",
-			clipText = output_text(),
+			clipText = calc_summary_text(),
 			icon = icon("copy"),
 			tooltip = "Copy text",
 			placement = "top",
 			options = list(delay = list(show = 800, hide = 100), trigger = "hover")
 		)
 	})
+	
+	output$clip2 <- renderUI({
+		rclipButton(
+			inputId = "clipbtn2",
+			label = "",
+			clipText = full_storage_text(),
+			icon = icon("copy"),
+			tooltip = "Copy text",
+			placement = "top",
+			options = list(delay = list(show = 800, hide = 100), trigger = "hover")
+		)
+	})
+	
+	
 	
 	observeEvent(input$reset, {
 		seq_options$chosen_lib_type <- NULL
