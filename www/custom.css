@@ -14,6 +14,24 @@ body {
 }
 */
 
+h1 {
+	text-align: center;
+	font: bold 30px Arial;
+	/*color: orange;*/
+}
+
+#field_fill_msg {
+	text-align: center;
+	color: #EB5F1E;
+	font: bold 20px Arial;
+}
+
+#reset {
+	float: right;
+	margin-top: 30px;
+	
+}
+
 .btn {
   background: #FCF5B9;
   /*background: #B2E0D3;*/

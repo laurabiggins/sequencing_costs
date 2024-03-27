@@ -26,112 +26,113 @@ ui <- fluidPage(
 		tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
 	),
 	tags$head(tags$title("Sequencing costs")),
-	dashboardPage(
-		dashboardHeader(disable = TRUE),
-		dashboardSidebar(disable = TRUE),
-		dashboardBody(
-			br(),
-			br(),
-			## dropdowns ----
-			fluidRow(
-				column(
-					width = 10, offset = 1,
-					h1("Storage costs for sequencing data"),
-					br(),
-					#actionButton("browser", "browser"),
-					#verticalLayout(
-					fluidRow(
-						column(width = 6,
-							shinyWidgets::virtualSelectInput(
-								inputId = "library_selector", 
-								label   = "Library type", 
-								choices = ""
-							)
-						),
-						column(width = 6,
-							shinyWidgets::virtualSelectInput(
-								inputId = "run_type_selector", 
-								label   = "Run type",
-								choices = ""
-							)
+	fluidPage(
+		br(),
+		actionButton("browser", "browser"),
+		## select inputs ----
+		fluidRow(
+			column(
+				width = 10, offset = 1,
+				h1("Storage costs for sequencing data"),
+				br(),
+				fluidRow(
+					column(width = 6,
+						shinyWidgets::virtualSelectInput(
+							inputId = "library_selector", 
+							label   = "Library type", 
+							choices = ""
 						)
 					),
-					fluidRow(
-						column(width = 6,
-							shinyWidgets::virtualSelectInput(
-								inputId = "read_length_selector", 
-								label   = "Read Length",
-								choices = ""
-							)
-						),
-						column(width = 6,
-							shinyWidgets::virtualSelectInput(
-								inputId = "paired_end_selector", 
-								label   = "Paired End",
-								#choices = list(No = FALSE, Yes = TRUE)
-								choices = ""
-							)
+					column(width = 6,
+						shinyWidgets::virtualSelectInput(
+							inputId = "run_type_selector", 
+							label   = "Run type",
+							choices = ""
+						)
+					)
+				),
+				fluidRow(
+					column(width = 6,
+						shinyWidgets::virtualSelectInput(
+							inputId = "read_length_selector", 
+							label   = "Read Length",
+							choices = ""
 						)
 					),
-					fluidRow(
-						column(width = 6,
-							numericInput(
-								inputId = "no_of_lanes",
-								label   = "Number of lanes",
-								value   = 1
-							)
+					column(width = 6,
+						shinyWidgets::virtualSelectInput(
+							inputId = "paired_end_selector", 
+							label   = "Paired End",
+							#choices = list(No = FALSE, Yes = TRUE)
+							choices = ""
+						)
+					)
+				),
+				fluidRow(
+					column(width = 6,
+						numericInput(
+							inputId = "no_of_lanes",
+							label   = "Number of lanes",
+							value   = 1
 						)
 					),
-					fluidRow(
-						column(
-							width = 12,
-							#DT::dataTableOutput(outputId = "fake_table")
-						)
+					#### reset button ----
+					column(
+						width = 6,
+						actionButton("reset", "reset")
+					)
+				)
+			)
+		),
+		br(),
+		## calculate tabset panel ----
+		tabsetPanel(
+			id = "calculate_panel",
+			type = "hidden",
+			### info msg ----
+			tabPanelBody(
+				"select_msg",
+				fluidRow(
+					column(
+						width = 10,
+						offset = 1,
+						textOutput(outputId = "field_fill_msg")
 					)
 				)
 			),
-			br(),
-			fluidRow(
-				column(
-					width = 10, offset = 1,
-					tabsetPanel(
-						id = "calculate_panel",
-						type = "hidden",
-						tabPanelBody(
-							"select_msg",
-							textOutput(outputId = "field_fill_msg")
-						),
-						tabPanelBody(
-							"calculate",
-							fluidRow(
-								column(
-									width = 4,
-									actionButton(inputId = "calculate_btn", label = "Calculate cost")
-								),
-								column(
-									width = 3,
-									offset = 1,
-									actionButton("reset", "reset")
-								)
-							),
-							br(),
-							br(),
-							conditionalPanel(
-								condition = "input.calculate_btn > 0",
-								fluidRow(
-									column(
-										width = 12,
-										DT::dataTableOutput(outputId = "summary_table")
-									)
-								),
-								br(),
-								fluidRow(
-									column(width = 11, textOutput(outputId = "output_text")),
-									column(width = 1, uiOutput("clip"))
-								)
-							)
-						)
+			### calculate button ----
+			tabPanelBody(
+				"calculate",
+				fluidRow(
+					column(
+						width = 6,
+						offset = 3,
+						actionButton(inputId = "calculate_btn", label = "Calculate cost")
 					)
+				)
+			),
+			### cost info ----
+			#### summary table ---- 
+			tabPanelBody(
+				"cost_info",
+				fluidRow(
+					column(
+						width  = 10, 
+						offset = 1,
+						br(),
+						DT::dataTableOutput(outputId = "summary_table")
+					)
+				),
+				br(),
+				#### summary text ----
+				fluidRow(
+					column(
+						width  = 10, 
+						offset = 1,
+						br(),
+						p("Info about the different storage sizes"),
+						textOutput(outputId = "output_text")),
+					column(width = 1, uiOutput("clip"))
 				)
 			)
 		)
@@ -146,14 +147,14 @@ server <- function(input, output, session) {
 	output_msg <- reactiveVal("Calculation summary here")
 	
 	calculated_cost <- reactiveVal("")
-	
-	no_of_lanes <- reactiveVal(NULL)
-	
+
+	# dropdown options
 	seq_options <- reactiveValues(
 		chosen_lib_type    = NULL,
 		chosen_run_type    = NULL,
 		chosen_read_length = NULL,
-		chosen_paired_type = NULL
+		chosen_paired_type = NULL,
+		no_of_lanes        = NULL
 	)
 	
 	## outputs ----
@@ -164,24 +165,56 @@ server <- function(input, output, session) {
 	output$cost <- renderText(formatted_cost())
 	
 	output$summary_table <- DT::renderDataTable({
-	 	
-		DT::datatable(neat_table(), rownames = FALSE, options = list(dom="t")) |>
+		neat_table() |>
+			DT::datatable(rownames = FALSE, options = list(dom="t")) |>
 			DT::formatRound(columns = c(2,3))
 	})
 	
-	output$fake_table <- DT::renderDataTable({
-		
-		DT::datatable(temp_table, rownames = FALSE, options = list(dom="t")) |>
-			DT::formatRound(columns = c(2,3))
-		
+	## Set seq_options reactiveVals when user changes selection ----
+	# The if statement will return NULL if isTruthy == FALSE
+	observeEvent(input$library_selector, {
+		seq_options$chosen_lib_type <- if(isTruthy(input$library_selector)) input$library_selector
 	})
 	
-	temp_table <- tibble::tibble(
-			`storage type`    = c("min practical", "full"), 
-			`storage size gb` = c(1000, 2500),
-			`storage cost`    = c(1320, 5440)
-		)
+	observeEvent(input$run_type_selector, {
+		seq_options$chosen_run_type <- if(isTruthy(input$run_type_selector)) input$run_type_selector
+	})
+
+	observeEvent(input$read_length_selector, {
+		seq_options$chosen_read_length <- if(isTruthy(input$read_length_selector)) input$read_length_selector
+	})
 	
+	observeEvent(input$paired_end_selector, {
+		seq_options$chosen_paired_type <- if(isTruthy(input$paired_end_selector)) input$paired_end_selector
+	})
+	
+	observeEvent(input$no_of_lanes, {
+		n <- input$no_of_lanes
+		seq_options$no_of_lanes <- if(n >= min_lanes & n <= max_lanes) n
+	})
+	
+
+	## valid dropdown options ----
+	# We only want to show compatible options, so once one has been selected, the 
+	# others need to be updated. 
+	# The get_valid_ functions are in utils.R
+	valid_libraries <- reactive({
+		get_valid_libraries(all_run_info, reactiveValuesToList(seq_options))	
+	})
+	
+	valid_runs <- reactive({
+		get_valid_runs(all_run_info, reactiveValuesToList(seq_options))	
+	})
+	
+	valid_read_lengths <- reactive({
+		get_valid_read_lengths(all_run_info, reactiveValuesToList(seq_options))	
+	})
+	
+	valid_paired <- reactive({
+		get_valid_paired(all_run_info, reactiveValuesToList(seq_options))		
+	})
+	
+	## update select inputs ----
 	observe({
 		
 		updateVirtualSelect(
@@ -199,77 +232,29 @@ server <- function(input, output, session) {
 		
 	})
 
-
-	
-	# These will return NULL if not Truthy
-	observeEvent(input$library_selector, {
-		seq_options$chosen_lib_type <- if(isTruthy(input$library_selector)) input$library_selector
+	## all_valid flag
+	all_valid <- reactive({
+		all(sapply(reactiveValuesToList(seq_options), isTruthy))
 	})
 	
-	observeEvent(input$run_type_selector, {
-		seq_options$chosen_run_type <- if(isTruthy(input$run_type_selector)) input$run_type_selector
-	})
-
-	observeEvent(input$read_length_selector, {
-		seq_options$chosen_read_length <- if(isTruthy(input$read_length_selector)) input$read_length_selector
-	})
-	
-	observeEvent(input$paired_end_selector, {
-		seq_options$chosen_paired_type <- if(isTruthy(input$paired_end_selector)) input$paired_end_selector
-	})
-	
-	
-	valid_libraries <- reactive({
-		get_valid_libraries(all_run_info, reactiveValuesToList(seq_options))	
-	})
-	
-	valid_runs <- reactive({
-		get_valid_runs(all_run_info, reactiveValuesToList(seq_options))	
-	})
-	
-	valid_read_lengths <- reactive({
-		get_valid_read_lengths(all_run_info, reactiveValuesToList(seq_options))	
-	})
-	
-	valid_paired <- reactive({
-		get_valid_paired(all_run_info, reactiveValuesToList(seq_options))		
-	})
-	
-	
-	## observeEvents ----
-	observeEvent(input$no_of_lanes, {
-		if(!isTruthy(input$no_of_lanes)) no_of_lanes(NULL)
-		else {
-			if(input$no_of_lanes < min_lanes | input$no_of_lanes > max_lanes){
-				no_of_lanes(NULL)
-			} else {
-				no_of_lanes(input$no_of_lanes)
-			} 
-		}
-	})
-
-	 
 	### validate selections ----
 	# only show the calculate button if we've got valid input for each field
 	observe({
-		if(isTruthy(input$run_type_selector) & 
-			 isTruthy(input$read_length_selector) &
-			 isTruthy(input$paired_end_selector) &
-			 isTruthy(input$library_selector)  &
-			 isTruthy(no_of_lanes())) {
+		
+		if(all_valid()){
 				updateTabsetPanel(session, "calculate_panel", selected = "calculate")
 				output_msg("")
 				calculated_cost("")
 		} else {
-			if(!isTruthy(no_of_lanes())) {
-				output_msg(acceptable_lane_nos)
-			}
-			else {
-				output_msg("Fill in the fields above")
-			}
+			msg <- if_else(
+				!isTruthy(seq_options$no_of_lanes), 
+				acceptable_lane_nos, 
+				"Fill in all fields above"
+			)
+			output_msg(msg)
+			
 			calculated_cost("")
 			updateTabsetPanel(session, "calculate_panel", selected = "select_msg")
-			shinyjs::hide(id = "clip")
 		}
 	})
 	
@@ -281,8 +266,11 @@ server <- function(input, output, session) {
 		calculated_cost(cost())
 		output_msg(output_text())
 		
-		shinyjs::show(id = "clip")
+		updateTabsetPanel(session, "calculate_panel", selected = "cost_info")
 	})
+	
+	#TODO: sort out these cost reactives/outputs
+	# if no of lanes is deleted in app, it crashes - add if isTruthy
 	
 		
 	## Output value and text ----
@@ -298,17 +286,15 @@ server <- function(input, output, session) {
 	# extract run size
 	filtered_table <- reactive({
 		
-		req(input$no_of_lanes, seq_options$chosen_lib_type, seq_options$chosen_run_type, seq_options$chosen_paired_type, seq_options$chosen_read_length)
-		
+		req(all_valid())
 		filt <- get_filtered_table(all_run_info, reactiveValuesToList(seq_options))
-		
 		req(nrow(filt) == 1)
-		
 		dplyr::select(filt, practical_storage_size_gb:full_cost)
 	})
 	
 	total_values <- reactive({
-		filtered_table() * no_of_lanes()
+		req(seq_options$no_of_lanes)
+		filtered_table() * seq_options$no_of_lanes
 	})
 	
 	
