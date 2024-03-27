@@ -4,7 +4,6 @@ library(shinyjs)
 library(shinyWidgets)
 library(dplyr)
 library(rclipboard)
-library(kableExtra)
 
 # more info - generates x gb of data which costs x, plus extra files
 
