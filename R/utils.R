@@ -39,11 +39,9 @@ get_valid_paired <- function(all_run_info, seq_options) {
 	
 	seq_options$chosen_paired_type_type <- NULL
 	filt <- get_filtered_table(all_run_info, seq_options)
-	# single_paired <- unique(filt$paired)
-	# vec_names <- if_else(single_paired_seq_options, "yes", "no")
-	# names(single_paired_) <- vec_names
 	
 	c("", unique(filt$paired))
+	#c("", single_paired)
 }
 
 format_lane_text <- function(number){

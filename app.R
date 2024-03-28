@@ -1,11 +1,11 @@
 library(shiny)
-library(shinydashboard)
 library(shinyjs)
 library(shinyWidgets)
 library(dplyr)
+library(tibble)
 library(rclipboard)
-
-# more info - generates x gb of data which costs x, plus extra files
+#library(shinyFeedback)
+library(DT)
 
 all_run_info <- readRDS("data/all_run_costs.rds")
 available_library_types <- unique(all_run_info$Library_Prep)
@@ -20,14 +20,14 @@ acceptable_lane_nos <- paste0("Number of lanes must be between ", min_lanes, " a
 ui <- fluidPage(
 	rclipboard::rclipboardSetup(),
 	shinyjs::useShinyjs(),
-	shinyFeedback::useShinyFeedback(),
+	#shinyFeedback::useShinyFeedback(),
 	tags$head(
 		tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
 	),
 	tags$head(tags$title("Sequencing costs")),
 	fluidPage(
 		br(),
-		actionButton("browser", "browser"),
+	#	actionButton("browser", "browser"),
 		## select inputs ----
 		fluidRow(
 			column(
@@ -61,8 +61,7 @@ ui <- fluidPage(
 					column(width = 6,
 						shinyWidgets::virtualSelectInput(
 							inputId = "paired_end_selector", 
-							label   = "Paired End",
-							#choices = list(No = FALSE, Yes = TRUE)
+							label   = "Single or Paired End",
 							choices = ""
 						)
 					)
@@ -78,7 +77,8 @@ ui <- fluidPage(
 					#### reset button ----
 					column(
 						width = 6,
-						actionButton("reset", "reset")
+						actionButton("reset", "reset"),
+						align = "right"
 					)
 				)
 			)
@@ -104,9 +104,9 @@ ui <- fluidPage(
 				"calculate",
 				fluidRow(
 					column(
-						width = 6,
-						offset = 3,
-						actionButton(inputId = "calculate_btn", label = "Calculate cost")
+						width = 12,
+						actionButton(inputId = "calculate_btn", label = "Calculate cost"),
+						align = "center"
 					)
 				)
 			),
@@ -148,10 +148,26 @@ ui <- fluidPage(
 						textOutput(outputId = "output_text_full")
 					),
 					column(width = 1, uiOutput("clip2"))
-				),
-				br()
+				)
 			)
-		)
+		),
+		br(),
+		br(),
+		br(),
+		fluidRow(
+			column(
+				width = 2,
+				tags$img(src = "bioinformatics_logo_small.png", width = "200", height = "71")
+			),
+			column(
+				width = 10,
+				#offset = 1,
+				br(),
+				br(),
+				p("Any problems please email laura.biggins@babraham.ac.uk", style = "font-size:12px", align = "right")
+			)  
+		),
+		br()
 	)
 )
 
@@ -161,9 +177,8 @@ server <- function(input, output, session) {
 	observeEvent(input$browser, browser())
 	
 	## reactive Vals ----
-	#output_msg <- reactiveVal("Calculation summary here")
+	# Instruction message 
 	field_fill_info <- reactiveVal("")
-	#calculated_cost <- reactiveVal("")
 
 	# dropdown options
 	seq_options <- reactiveValues(
@@ -176,9 +191,7 @@ server <- function(input, output, session) {
 	
 	## outputs ----
 	output$field_fill_msg <- renderText(field_fill_info())
-	
-	#output$output_text <- renderText(calc_summary_text())
-	
+
 	output$output_text_practical <- renderText(calc_summary_text())
 	output$output_text_full <- renderText(full_storage_text())
 	
@@ -233,7 +246,17 @@ server <- function(input, output, session) {
 	})
 	
 	valid_paired <- reactive({
-		get_valid_paired(all_run_info, reactiveValuesToList(seq_options))		
+		vec <- get_valid_paired(all_run_info, reactiveValuesToList(seq_options))	
+		# this should be "" and then either or both TRUE, FALSE
+		#single_paired <- unique(filt$paired)
+		vec_names <- case_when(
+			vec == TRUE ~ "paired", 
+			vec == FALSE ~ "single",
+			vec == "" ~ "  ",
+			.default = "nothing"
+		)
+		names(vec) <- vec_names
+		vec
 	})
 	
 	## update select inputs ----

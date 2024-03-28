@@ -27,7 +27,7 @@ h1 {
 }
 
 #reset {
-	float: right;
+/*	float: right;*/
 	margin-top: 30px;
 	font: bold 16px Arial;
   border: 2px solid #112A46;
