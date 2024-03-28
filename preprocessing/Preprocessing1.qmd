@@ -26,8 +26,6 @@ file_sizes_file <- "file_sizesL.txt"
 library_types <- "library_types.csv"
 ```
 
-
-
 ## Sequencing run sizes
 
 `file_sizesL.txt` contains sizes of files generated from the `make_outputs.py` script.
@@ -84,9 +82,13 @@ We can use these values to interpolate/extrapolate for any number of sequences.
 
 ## Sequencing run types
 
-[NovaSeq specs](https://emea.illumina.com/systems/sequencing-platforms/novaseq/specifications.html "NovaSeq specs")\
+[NovaSeq 6000 specs](https://emea.illumina.com/systems/sequencing-platforms/novaseq/specifications.html "NovaSeq specs")
 
-### Standard run types  
+[NovaSeq X specs](https://www.illumina.com/systems/sequencing-platforms/novaseq-x-plus/specifications.html)
+
+[AVITI specs](https://www.elementbiosciences.com/products/aviti/specs)\
+
+### Standard run types
 
 These will need updating as necessary.
 
@@ -97,10 +99,9 @@ kbl(run_types, digits = 2) |>
 	scroll_box(height = "300px")
 ```
 
-
 ### Calculate size of fastq files
 
-Using the slope data.  
+Using the slope data.
 
 ```{r}
 run_types <- run_types |>
@@ -130,7 +131,7 @@ kbl(run_types, digits = 2) |>
 
 ### Calculate storage sizes for retaining different amounts of data
 
-```
+```         
 minimum_possible_size_gb   = fastq_size_gb,
 practical_storage_size_gb  = split_fq_size_gb + mapped_BAM_size_gb + derived_data_size_gb
 full_data_size_gb          = fastq_size_gb + split_fq_size_gb + trimmed_fq_size_gb + mapped_BAM_size_gb + derived_data_size_gb
@@ -177,13 +178,11 @@ costs |>
 	DT::formatRound(columns = size_cost_cols)
 ```
 
-
 This is the file used in the Shiny app.
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 saveRDS(costs, file = "../data/all_run_costs.rds")
 ```
-
 
 ## Slope regression plot
 
