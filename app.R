@@ -9,7 +9,8 @@ library(DT)
 
 all_run_info <- readRDS("data/all_run_costs.rds")
 available_library_types <- unique(all_run_info$Library_Prep)
-cost_per_unit <- 1.32
+# Value from Cass Flowers on 08/04/2024 "£1.64 per GB for 10 years based on the new storage hardware costs"
+cost_per_unit <- 1.64
 max_lanes <- 100
 min_lanes <- 1
 
