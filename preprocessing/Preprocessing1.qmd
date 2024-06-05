@@ -1,9 +1,10 @@
 ---
 title: "Preprocessing of sequencing storage data"
-format:
+format: #gfm
   html:
     code-fold: show
     code-tools: true
+prefer-html: true
 editor: visual
 editor_options: 
   chunk_output_type: console
@@ -164,7 +165,7 @@ DT::datatable(sizes, rownames = FALSE) |>
 Cost per unit was supplied by computing - this is liable to change.
 
 ```{r}
-cost_per_unit <- 1.32
+cost_per_unit <- 1.64
 costs <- sizes |>
 	mutate(
 		practical_cost = practical_storage_size_gb * cost_per_unit,
