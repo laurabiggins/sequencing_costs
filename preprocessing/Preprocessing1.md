@@ -139,6 +139,8 @@ sequences.
 [NovaSeq
 specs](https://emea.illumina.com/systems/sequencing-platforms/novaseq/specifications.html "NovaSeq specs")  
 
+The value for mseqs (millions of seqs) that we're using is for each lane, so we need to take the number of lanes on the flowcell into account. Illumina tends to give the total number of reads expected for the whole flow cell. 
+
 ### Standard run types
 
 These will need updating as necessary.
