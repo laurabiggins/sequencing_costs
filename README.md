@@ -10,7 +10,7 @@ The app provides 2 separate estimates - one for the practical storage
 size and one for the full storage size. If the researcher envisages that
 they will want to retain more intermediate files beyond a single set of
 fastq and bam files, they may want to opt for the `full` option. See
-[practical vs full data storage](#practical-vs-full-data-storage) section for more details
+[practical vs full data storage](#Practical-vs-full-data-storage) section for more details.
 
 The data used in the app can also be found
 [here](data/all_run_costs.csv)
@@ -62,11 +62,11 @@ The number of reads will depend on:
 -   whether the run is paired or single end
 
 The volume of derived files will depend on the library type - e.g. more
-files will be generated for bisulfite libraries
+files will be generated for bisulfite libraries.
 
 Mapped bam file sizes are estimated at 1.5x the size of fastq files.
 
-### practical vs full data storage
+### Practical vs full data storage
 
 The value for practical storage size covers demultiplexed fastq files
 and mapped bam files. If additional derived data is generated for the
@@ -76,7 +76,7 @@ libraries do not assume derived data).
 The value for full storage allows the retention of more intermediate
 files, such as raw fastq and trimmed fastq files.
 
-Calculations from Preprocessing1.qmd
+Calculations from `Preprocessing1.qmd`
 
 ```         
 minimum_possible_size_gb   = fastq_size_gb,
