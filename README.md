@@ -7,7 +7,7 @@ This simple app provides estimates of costs for storage of sequencing data. This
 
 The app provides 2 separate estimates - one for the practical storage size and one for the full storage size. If the researcher envisages that they will want to retain more intermediate files beyond a single set of fastq and bam files, they may want to opt for the `full` option. See [practical vs full data storage](#Practical-vs-full-data-storage) section for more details.
 
-The data used in the app can also be found [here](data/all_run_costs.csv)
+The app is essentially a front end to the data that can be found [here](data/all_run_costs.csv)
 
 ## Updating the application
 
