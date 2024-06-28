@@ -1,8 +1,9 @@
-       
-       
+# Storage costs for sequencing data 
+Live application can be found  [here](https://www.bioinformatics.babraham.ac.uk/shiny/sequencing_costs/ "storage costs Shiny app") 
+              
 ![app screenshot](images/app_screenshot.PNG)
 
-This simple [Shiny app](https://www.bioinformatics.babraham.ac.uk/shiny/sequencing_costs/ "storage costs Shiny app") provides estimates of costs for storage of sequencing data. This covers demultiplexed fastq files, mapped bam files, and additional derived files if required for the library type.
+This simple app provides estimates of costs for storage of sequencing data. This covers demultiplexed fastq files, mapped bam files, and additional derived files if required for the library type.
 
 The app provides 2 separate estimates - one for the practical storage size and one for the full storage size. If the researcher envisages that they will want to retain more intermediate files beyond a single set of fastq and bam files, they may want to opt for the `full` option. See [practical vs full data storage](#Practical-vs-full-data-storage) section for more details.
 
