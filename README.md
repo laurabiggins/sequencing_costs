@@ -40,7 +40,7 @@ lane.
 can be added to this. The main reason for having the library type
 information is to assign a size factor for derived data.
 
-[file_sizesL.txt](file_sizesL.txt) - this contains file sizes for
+[file_sizesL.txt](preprocessing/file_sizesL.txt) - this contains file sizes for
 different read length and numbers of reads. The file sizes were derived
 from the output of the `make_outputs.py` script which generates in
 silico fastq files of different read lengths and numbers of reads. This
