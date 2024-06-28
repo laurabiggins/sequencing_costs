@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 # Calculating the costs of storing sequencing data
 
 This simple [Shiny
@@ -16,7 +10,7 @@ The app provides 2 separate estimates - one for the practical storage
 size and one for the full storage size. If the researcher envisages that
 they will want to retain more intermediate files beyond a single set of
 fastq and bam files, they may want to opt for the `full` option. See
-[practical vs full data storage] section for more details
+[practical vs full data storage](#practical-vs-full-data-storage) section for more details
 
 The data used in the app can also be found
 [here](data/all_run_costs.csv)
