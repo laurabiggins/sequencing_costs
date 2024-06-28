@@ -165,7 +165,11 @@ ui <- fluidPage(
 				#offset = 1,
 				br(),
 				br(),
-				p("Any problems please email laura.biggins@babraham.ac.uk", style = "font-size:12px", align = "right")
+				p("Code and more information can be found in the ", 
+					a("GitHub repository", href = "https://github.com/laurabiggins/sequencing_costs"),
+					style = "font-size:12px", align = "right"
+				),
+				p("Any problems please email laura.biggins@babraham.ac.uk or submit an issue on GitHub", style = "font-size:12px", align = "right")
 			)  
 		),
 		br()
