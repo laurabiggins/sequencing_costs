@@ -4,7 +4,7 @@ format: #gfm
   html:
     code-fold: show
     code-tools: true
-prefer-html: true
+prefer-html: true 
 editor: visual
 editor_options: 
   chunk_output_type: console
@@ -183,6 +183,7 @@ This is the file used in the Shiny app.
 
 ```{r, eval=TRUE}
 saveRDS(costs, file = "../data/all_run_costs.rds")
+readr::write_csv(file = "../data/all_run_costs.csv", x=all_run_info)
 ```
 
 ## Slope regression plot
