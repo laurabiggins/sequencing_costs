@@ -50,9 +50,7 @@ The value for full storage allows the retention of more intermediate files, such
 Calculations from `Preprocessing1.qmd`
 
 ```         
-minimum_possible_size_gb   = fastq_size_gb,
-prac
+minimum_possible_size_gb  = fastq_size_gb,
+practical_storage_size_gb = split_fq_size_gb + mapped_BAM_size_gb + derived_data_size_gb
+full_data_size_gb         = fastq_size_gb + split_fq_size_gb + trimmed_fq_size_gb + mapped_BAM_size_gb + derived_data_size_gb
 ```
-
-tical_storage_size_gb = split_fq_size_gb + mapped_BAM_size_gb + derived_data_size_gb
-full_data_size_gb = fastq_size_gb + split_fq_size_gb + trimmed_fq_size_gb + mapped_BAM_size_gb + derived_data_size_gb
