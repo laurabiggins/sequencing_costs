@@ -41,7 +41,7 @@ The volume of derived files will depend on the library type - e.g. more files wi
 
 Mapped bam file sizes are estimated at 1.5x the size of fastq files.
 
-### Practical vs full data storage {#practical-vs-full-data-storage}
+### Practical vs full data storage
 
 The value for practical storage size covers demultiplexed fastq files and mapped bam files. If additional derived data is generated for the library type, that will also be included (standard RNA-seq and similar libraries do not assume derived data).
 
