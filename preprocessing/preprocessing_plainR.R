@@ -80,4 +80,5 @@ costs <- sizes |>
 
 ## ----eval=TRUE----------------------------------------------------------------------------------------------
 saveRDS(costs, file = "../data/all_run_costs.rds")
+readr::write_csv(file = "../data/all_run_costs.csv", x=costs)
 
