@@ -163,9 +163,10 @@ DT::datatable(sizes, rownames = FALSE) |>
 ## Costs
 
 Cost per unit was supplied by computing - this is liable to change.
+Cost updated 02/06/2025
 
 ```{r}
-cost_per_unit <- 1.64
+cost_per_unit <- 1.72
 costs <- sizes |>
 	mutate(
 		practical_cost = practical_storage_size_gb * cost_per_unit,

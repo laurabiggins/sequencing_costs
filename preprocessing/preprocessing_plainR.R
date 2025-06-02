@@ -11,8 +11,8 @@ library(tidyverse)
 sequencing_run_types_file <- "sequencing_run_types.csv"
 file_sizes_file <- "file_sizesL.txt"
 library_types <- "library_types.csv"
-# Value from Cass Flowers on 08/04/2024 "£1.64 per GB for 10 years based on the new storage hardware costs"
-cost_per_unit <- 1.64 
+# Cost updated 02/06/2025
+cost_per_unit <- 1.72 
 
 ## -----------------------------------------------------------------------------------------------------------
 file_sizes <- read_delim(file_sizes_file, col_names = c("bytes","file")) 
